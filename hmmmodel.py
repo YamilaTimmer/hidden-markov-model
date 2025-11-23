@@ -82,29 +82,28 @@ class HiddenMarkovModel:
 
             E = len(emission_sequence)
             S = len(self.states)
-            F = np.zeros((S, E))
+            F = np.full((S, E), -np.inf)
 
-            # Bereken de kansen voor de start staat, gegeven de emissie
+            # Bereken de log kansen voor de eerste observatie
             for i, state in enumerate(self.states):
-                F[i, 0] = self.startprob[state] * max(self.emissionprob[state][emission_sequence[0]], epsilon)
+                F[i, 0] = math.log(self.startprob[state]) + math.log(max(self.emissionprob[state][emission_sequence[0]], epsilon))
 
             for t in range(1, E):
                 for i, curr_state in enumerate(self.states):
-                    total = 0.0
-
+                    log_probs = []
                     for j, prev_state in enumerate(self.states):
-                        # Bereken de kansen op staat i gegeven de vorige staat en emissie
-                        total += F[j, t - 1] * self.transprob[prev_state][curr_state]
-                    # Tel alle kansen op staat i op
-                    F[i, t] = total * max(self.emissionprob[curr_state][emission_sequence[t]], epsilon)
+                        # Bereken de kansen op staat i gegeven de vorige staat en 'verzamel' deze in log_probs
+                        log_probs.append(F[j, t - 1] + math.log(self.transprob[prev_state][curr_state]))
 
-            total_probability = np.sum(F[:, -1])
-            log_probability = math.log(max(total_probability, epsilon))
+                    # Tel alle kansen op staat i op gegeven de emissie (met reduce)
+                    F[i, t] = (math.log(max(self.emissionprob[curr_state][emission_sequence[t]], epsilon))
+                               + np.logaddexp.reduce(log_probs))
+
+            log_probability = np.logaddexp.reduce(F[:, -1])
 
             return log_probability
 
         else:
-
 
             log_probability = (
                     math.log(self.startprob[state_sequence[0]]) +
