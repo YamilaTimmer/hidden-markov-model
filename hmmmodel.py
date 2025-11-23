@@ -2,6 +2,8 @@ import math
 import numpy as np
 import random
 import matplotlib.pyplot as plt
+from itertools import product
+from math import exp, log
 
 class HiddenMarkovModel:
     def __init__(self, startprob, transprob, emissionprob, states, emissions):
@@ -71,25 +73,26 @@ class HiddenMarkovModel:
         return observed_transitions, observed_emissions
 
 
-    def score(self, emission_seq, state_seq=None):
-        if state_seq is None:
+    def score(self, emission_sequence, state_sequence=None):
+        if state_sequence is None:
         # Implementatie forward-algoritme
-            log_probability = math.log(self.startprob[state_seq[0]])
+            return
 
         else:
-            probability = self.startprob[state_seq[0]]
-            log_probability = math.log(self.startprob[state_seq[0]])
+            # klein getal om 0 waarden mee te vervangen voor de log berekening
+            epsilon = 1e-10
 
-            for i in range(0, len(state_seq)-1):
-                probability_emission = self.emissionprob.get(state_seq[i])[emission_seq[i]]
-                probability_table = self.transprob.get(state_seq[i-1])[state_seq[i]]
-                probability *= probability_emission #* probability_table
+            log_probability = (
+                    math.log(self.startprob[state_sequence[0]]) +
+                    # als emissiekans gelijk is aan 0, wordt epsilon gebruikt
+                    math.log(max(self.emissionprob[state_sequence[0]][emission_sequence[0]], epsilon))
+            )
 
-                if probability_emission > 0:
-                    log_probability += math.log(probability_emission) #+ math.log(probability_table)
-
-                else:
-                    log_probability += math.log(probability_table)
+            for i in range(1, len(state_sequence)):
+                log_probability += (
+                    math.log(self.transprob[state_sequence[i - 1]][state_sequence[i]]) +
+                    math.log(max(self.emissionprob[state_sequence[i]][emission_sequence[i]], epsilon))
+                    )
 
         return log_probability
 
