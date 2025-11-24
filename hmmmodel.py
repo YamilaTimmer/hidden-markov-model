@@ -123,20 +123,20 @@ class HiddenMarkovModel:
     def predict(self, emission_sequence):
         num_observations = len(emission_sequence)
         num_states = len(self.states)
-        #probability_table = np.zeros((num_states, num_observations))
         log_probability_table = np.full((num_states, num_observations), -np.inf)
         best_prev = np.zeros((num_states, num_observations))
+        epsilon = 1e-10
 
         # Eerste waarneming
         for s in self.states:
-            log_probability_table[s, 0] = math.log(self.startprob[s]) + math.log(self.emissionprob[s][emission_sequence[0]])
+            log_probability_table[s, 0] = (math.log(max(self.startprob[s], epsilon)) + math.log(max(self.emissionprob[s][emission_sequence[0]], epsilon)))
 
         # Verdere waarnemingen
         for t in range(1, num_observations):
             for s in self.states:
                 probs = [log_probability_table[p, t-1] + math.log(self.transprob[p][s]) for p in self.states]
                 best_prev[s, t] = np.argmax(probs)
-                log_probability_table[s, t] = max(probs) + math.log(self.emissionprob[s][emission_sequence[t]])
+                log_probability_table[s, t] = max(probs) + math.log(max(self.emissionprob[s][emission_sequence[t]], epsilon))
 
         path = [0] * num_observations
         path[-1] = int(np.argmax(log_probability_table[:, -1]))
