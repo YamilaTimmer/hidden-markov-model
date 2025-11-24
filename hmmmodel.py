@@ -125,7 +125,6 @@ class HiddenMarkovModel:
         epsilon = 1e-10
         num_observations = len(emission_sequence)
         num_states = len(self.states)
-        #probability_table = np.zeros((num_states, num_observations))
         log_probability_table = np.full((num_states, num_observations), -np.inf)
         best_prev = np.zeros((num_states, num_observations))
 
