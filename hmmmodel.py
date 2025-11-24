@@ -2,8 +2,7 @@ import math
 import numpy as np
 import random
 import matplotlib.pyplot as plt
-from itertools import product
-from math import exp, log
+
 
 class HiddenMarkovModel:
     def __init__(self, startprob, transprob, emissionprob, states, emissions):
@@ -74,13 +73,37 @@ class HiddenMarkovModel:
 
 
     def score(self, emission_sequence, state_sequence=None):
+
+        # klein getal om 0 waarden mee te vervangen voor de log berekening
+        epsilon = 1e-10
+
         if state_sequence is None:
         # Implementatie forward-algoritme
-            return
+
+            E = len(emission_sequence)
+            S = len(self.states)
+            F = np.full((S, E), -np.inf)
+
+            # Bereken de log kansen voor de eerste observatie
+            for i, state in enumerate(self.states):
+                F[i, 0] = math.log(self.startprob[state]) + math.log(max(self.emissionprob[state][emission_sequence[0]], epsilon))
+
+            for t in range(1, E):
+                for i, curr_state in enumerate(self.states):
+                    log_probs = []
+                    for j, prev_state in enumerate(self.states):
+                        # Bereken de kansen op staat i gegeven de vorige staat en 'verzamel' deze in log_probs
+                        log_probs.append(F[j, t - 1] + math.log(self.transprob[prev_state][curr_state]))
+
+                    # Tel alle kansen op staat i op gegeven de emissie (met reduce)
+                    F[i, t] = (math.log(max(self.emissionprob[curr_state][emission_sequence[t]], epsilon))
+                               + np.logaddexp.reduce(log_probs))
+
+            log_probability = np.logaddexp.reduce(F[:, -1])
+
+            return log_probability
 
         else:
-            # klein getal om 0 waarden mee te vervangen voor de log berekening
-            epsilon = 1e-10
 
             log_probability = (
                     math.log(self.startprob[state_sequence[0]]) +
