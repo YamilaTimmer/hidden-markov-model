@@ -123,22 +123,23 @@ class HiddenMarkovModel:
     def predict(self, emission_sequence):
         num_observations = len(emission_sequence)
         num_states = len(self.states)
-        probability_table = np.zeros((num_states, num_observations))
+        #probability_table = np.zeros((num_states, num_observations))
+        log_probability_table = np.full((num_states, num_observations), -np.inf)
         best_prev = np.zeros((num_states, num_observations))
 
         # Eerste waarneming
         for s in self.states:
-            probability_table[s, 0] = self.startprob[s] * self.emissionprob[s][emission_sequence[0]]
+            log_probability_table[s, 0] = math.log(self.startprob[s]) + math.log(self.emissionprob[s][emission_sequence[0]])
 
         # Verdere waarnemingen
         for t in range(1, num_observations):
             for s in self.states:
-                probs = [probability_table[p, t - 1] * self.transprob[p][s] for p in self.states]
+                probs = [log_probability_table[p, t-1] + math.log(self.transprob[p][s]) for p in self.states]
                 best_prev[s, t] = np.argmax(probs)
-                probability_table[s, t] = max(probs) * self.emissionprob[s][emission_sequence[t]]
+                log_probability_table[s, t] = max(probs) + math.log(self.emissionprob[s][emission_sequence[t]])
 
         path = [0] * num_observations
-        path[1] = int(np.argmax(probability_table[:, -1]))
+        path[-1] = int(np.argmax(log_probability_table[:, -1]))
 
         for t in range (num_observations - 1, 0, -1):
             path[t-1] = int(best_prev[path[t], t])
